@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="IE=edge" http-equiv="X-UA-Compatible" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>IAVS & SPV PDFs</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --blue: #1e90ff;
+      }
+
+      html {
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      body {
+        padding: 1rem 3rem 5rem 3rem;
+      }
+
+      .template-iavs__title {
+        font-size: 16px;
+      }
+
+      .template-iavs--item {
+        margin-top: 1rem;
+      }
+
+      .assumptions {
+        margin-top: 10px;
+        width: 100%;
+        max-width: 800px;
+        border-collapse: collapse;
+      }
+
+      .assumptions td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        width: 50%;
+      }
+
+      .personnel-costs__table {
+        margin-top: 1rem;
+        width: 100%;
+        max-width: 800px;
+      }
+
+      .personnel-costs__table .header,
+      .content-item {
+        width: 100%;
+        display: flex;
+        align-items: flex-end;
+      }
+
+      .personnel-costs__table .position {
+        width: 55%;
+        margin-right: 7px;
+      }
+
+      .personnel-costs__table .per {
+        width: 45%;
+      }
+
+      .per-employee {
+        text-align: center;
+        margin-right: 7px;
+      }
+
+      .personnel-costs__table .employees,
+      .total-costs {
+        width: 15%;
+        margin-right: 7px;
+      }
+
+      .th--average,
+      .th--total-hours,
+      .th--additional-cost {
+        margin-top: 5px;
+        flex: 1;
+        text-align: center;
+        margin-right: 7px;
+      }
+
+      .td--average,
+      .td--total-hours,
+      .td--additional-cost {
+        margin-top: 5px;
+        flex: 1;
+        margin-right: 7px;
+      }
+
+      .td--total-costs,
+      .td--average,
+      .td--additional-cost {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .other-direct--item {
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-end;
+      }
+
+      .other-direct--value {
+        width: 100%;
+        max-width: 100px;
+        margin-left: 15px;
+        /* padding-top: 5px; */
+      }
+
+      .valuation--table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .valuation--table tr th {
+        border-bottom: 1px solid black;
+      }
+
+      .valuation--table td {
+        padding: 10px 6px;
+      }
+
+      .valuation--table__title {
+        max-width: 120px;
+        min-width: 110px;
+      }
+
+      .text-align--center {
+        text-align: center;
+      }
+
+      .font-weight--600 {
+        font-weight: 600;
+      }
+
+      .font-size--xl {
+        font-size: 20px !important;
+      }
+
+      .font-size--l {
+        font-size: 18px !important;
+      }
+
+      .font-size--m {
+        font-size: 16px !important;
+      }
+
+      .border--bottom {
+        border-bottom: 1px solid black !important;
+      }
+
+      .border--top {
+        border-top: 1px solid black;
+      }
+
+      .dflex {
+        display: flex;
+      }
+
+      .j-content--between {
+        justify-content: space-between;
+      }
+
+      .color--blue {
+        color: var(--blue);
+      }
+
+      .text-align--right {
+        text-align: right;
+      }
+
+      .border-none {
+        border-bottom: none;
+      }
+
+      .padding-vertical--none {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+      }
+
+      .padding-bottom--none {
+        padding-bottom: 0 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="template-container">
+      <div class="template-iavs">
+        <h1 class="template-iavs__title font-size--xl">IAVS</h1>
+        <p class="text-align--center font-size--l">
+          Valuation Report of first asset profile As of Thu Nov 25 2021 00:08:19 GMT+0700 (Indochina Time)
+        </p>
+        <div class="template-iavs--item">
+          <p class="font-weight--600 font-size--m">1. Asset Owner</p>
+          <p class="font-weight--600">TEst</p>
+        </div>
+        <div class="template-iavs--item">
+          <p class="font-weight--600">Ownership Type</p>
+          <p>Unknown</p>
+        </div>
+        <div class="template-iavs--item">
+          <p class="font-weight--600">Business Summary</p>
+          <p>desciption for asset owner 111 3331</p>
+        </div>
+        <div class="template-iavs--item">
+          <p class="font-weight--600">Business Sector</p>
+          Unknown
+        </div>
+        <div class="template-iavs--item">
+          <p class="font-weight--600 font-size--m">2. Asset Profile</p>
+          <p>first asset profile</p>
+        </div>
+      </div>
+      <div class="template-iavs--item">
+        <p class="font-weight--600">Asset Description</p>
+        <p>desciption for asset owner 111 3331</p>
+      </div>
+      <div class="template-iavs--item">
+        <p class="font-weight--600">Development Stage</p>
+        <p>develop</p>
+      </div>
+      <div class="template-iavs--item">
+        <p class="font-weight--600">Category</p>
+        <p>Software code</p>
+        <p>Software app(s)</p>
+        <p>Database(s)</p>
+        <p>Mark of conformance</p>
+      </div>
+      <div class="template-iavs--item">
+        <p class="font-weight--600">Market</p>
+        <p>Materials & Engineering</p>
+        <p>Aerospace, Defence & Security</p>
+        <p>Electronics & Hardware</p>
+        <p>Construction</p>
+      </div>
+      <div class="template-iavs--item">
+        <span class="font-weight--600">Patent number</span><span> </span>
+        <p>123232</p>
+        <span class="font-weight--600">Trademark number </span><span> </span>
+        <p>232424</p>
+      </div>
+      <div class="template-iavs--item">
+        <p class="font-weight--600 font-size--m">3. Valuation</p>
+        <span class="font-weight--600">Valuation using Replacement Cost method </span>
+      </div>
+      <table class="assumptions">
+        <tr>
+          <td>Overhead as a % of direct costs</td>
+          <td>3.3%</td>
+        </tr>
+        <tr>
+          <td>Developer's profit margin</td>
+          <td>2.3%</td>
+        </tr>
+        <tr>
+          <td>Obsolescence factor</td>
+          <td>2.3%</td>
+        </tr>
+        <tr>
+          <td>Discount rate</td>
+          <td>23.3%</td>
+        </tr>
+        <tr>
+          <td>Time required to replace (in months)</td>
+          <td>3</td>
+        </tr>
+      </table>
+      <div class="personnel-costs__table">
+        <div class="template-iavs--item">
+          <p class="font-weight--600 font-size--m">Personnel Costs</p>
+          <div class="border--bottom"></div>
+        </div>
+        <div class="header">
+          <div class="th--position position border--bottom">Position</div>
+          <div class="th--employees employees border--bottom text-align--center">
+            <p># Of</p>
+            <p>Employees</p>
+          </div>
+          <div class="th--per per">
+            <div class="per-employee">
+              <p>Per Employee</p>
+              <div class="border--bottom"></div>
+            </div>
+            <div class="dflex">
+              <div class="th--average border--bottom">
+                <p>Average</p>
+                <p>Hourly Rate</p>
+              </div>
+              <div class="th--total-hours border--bottom">
+                <p>Total</p>
+                <p>Hours</p>
+              </div>
+              <div class="th--additional-cost border--bottom">
+                <p>Additional</p>
+                <p>Cost</p>
+              </div>
+            </div>
+          </div>
+          <div class="th--total-costs total-costs border--bottom text-align--center">
+            <p>Total</p>
+            <p>Costs</p>
+          </div>
+        </div>
+        <div class="content"></div>
+        <!-- Other Direct Costs -->
+        <div class="template-iavs--item">
+          <p class="font-weight--600 font-size--m">Other Direct Costs</p>
+          <div class="border--bottom"></div>
+          <div class="color--blue dflex j-content--between">
+            <p>developer</p>
+            <p>42.3</p>
+          </div>
+          <div class="other-direct--item text-align--right">
+            <p>Total direct cost components</p>
+            <div class="other-direct--value dflex j-content--between border--top" style="padding-top: 5px">
+              <p>$</p>
+              <p>84.6</p>
+            </div>
+          </div>
+          <div class="other-direct--item text-align--right">
+            <p>Indirect costs [overhead]</p>
+            <div class="other-direct--value dflex j-content--between">
+              <p>$</p>
+              <p>3</p>
+            </div>
+          </div>
+          <div class="other-direct--item text-align--right">
+            <p>Total direct and indirect cost components</p>
+            <div class="other-direct--value dflex j-content--between border--top" style="padding-top: 5px">
+              <p>$</p>
+              <p>90</p>
+            </div>
+          </div>
+          <div class="other-direct--item text-align--right">
+            <p>Plus: developers profit</p>
+            <div class="other-direct--value dflex j-content--between">
+              <p>$</p>
+              <p>2</p>
+            </div>
+          </div>
+          <div class="other-direct--item text-align--right">
+            <p>Total direct and indirect cost components, plus: developers profit</p>
+            <div class="other-direct--value dflex j-content--between border--top" style="padding-top: 5px">
+              <p>$</p>
+              <p>90</p>
+            </div>
+          </div>
+          <div class="other-direct--item text-align--right">
+            <p>Plus: economic encentive</p>
+            <div class="other-direct--value dflex j-content--between">
+              <p>$</p>
+              <p>5</p>
+            </div>
+          </div>
+          <div class="other-direct--item text-align--right">
+            <p>Fair value of technology new</p>
+            <div class="other-direct--value dflex j-content--between border--top" style="padding-top: 5px">
+              <p>$</p>
+              <p>95</p>
+            </div>
+          </div>
+          <div class="other-direct--item text-align--right">
+            <p>Less: obsolescence</p>
+            <div class="other-direct--value dflex j-content--between">
+              <p>$</p>
+              <p>2.3</p>
+            </div>
+          </div>
+          <div class="other-direct--item text-align--right">
+            <p>Fair value of technology</p>
+            <div class="other-direct--value dflex j-content--between border--top" style="padding-top: 5px">
+              <p>$</p>
+              <p>97</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      discount rate: 23.3 fair value: 97
+    </div>
+  </body>
+</html>

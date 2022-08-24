@@ -1,0 +1,23 @@
+version: '3.1'
+services:
+  dbmysql:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    container_name: mysql
+    volumes:
+      - ./data/mysql:/docker-entrypoint-initdb.d
+    ports:
+      - 8350:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: ETxGkUcEZM7M22tP5
+      MYSQL_DATABASE: api-template
+  redis:
+    image: redis
+    container_name: cache
+    ports:
+      - 8353:6379
+    expose:
+      - 6379
+volumes:
+  db_data: { }
