@@ -1,35 +1,36 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {},
+    "baseUrl": "src",
+    "paths": {
+      "*": ["*"]
+    },
     "target": "ES2023",
-    "outDir": "dist",
     "module": "commonjs",
     "moduleResolution": "node",
     "incremental": true,
     "declaration": true,
     "newLine": "lf",
     "strict": true,
-    //= alwaysStrict, strictNullChecks, strictBindCallApply, strictFunctionTypes, strictPropertyInitialization, noImplicitAny, noImplicitThis, useUnknownInCatchVariables
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
+    "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noPropertyAccessFromIndexSignature": true,
-    // "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     "noUnusedParameters": true,
     "removeComments": true,
-    "resolveJsonModule": true,
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    // https://github.com/Microsoft/TypeScript/issues/2577
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "resolveJsonModule": true,
+    "strictPropertyInitialization": true
   },
-  "include": ["typings/global.d.ts", "src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "src/migration"]
+  "include": ["typings/**/*", "src/**/*", "test/**/*"],
+  "exclude": ["node_modules"]
 }

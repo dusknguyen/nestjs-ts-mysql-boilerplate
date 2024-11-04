@@ -1,32 +1,45 @@
-import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
-import { UtilService } from 'src/modules/common';
-import { JwtAuthenticationGuard, Payload } from 'src/modules/common/authentication';
-import { NormalResponse } from 'src/modules/share';
-
-import { LoginDto } from '../dtos';
+import { Controller, Post, Body } from '@nestjs/common';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../services';
-
+import { LoginDto } from '../dtos';
+import { AuthTokenDto } from '../dtos/auth-token.dto';
 /**
  * https://docs.nestjs.com/techniques/authentication
  */
-
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private auth: AuthService, private util: UtilService) {}
-
   /**
-   * See test/e2e/jwt-authentication.spec.ts
+   *
+   */
+  constructor(private auth: AuthService) {}
+  /**
+   *
    */
   @Post('login')
-  public async login(@Body() loginDto: LoginDto): Promise<NormalResponse> {
+  @ApiResponse({
+    status: 200,
+    description: 'Login successfully',
+    type: AuthTokenDto, // Response type
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 401, description: 'Forbidden.' })
+  public async login(@Body() loginDto: LoginDto): Promise<any> {
     return this.auth.login(loginDto);
   }
 
-  @UseGuards(JwtAuthenticationGuard)
-  @Get('check')
-  public check(@Body() user: Payload): NormalResponse {
-    return this.auth.jwtCheck(user);
+  /**
+   *
+   */
+  @Post('refresh-token')
+  @ApiResponse({
+    status: 200,
+    description: 'Refresh Token successfully',
+    type: AuthTokenDto, // Response type
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden.' })
+  @ApiResponse({ status: 401, description: 'Forbidden.' })
+  public async refreshToken(@Body() loginDto: LoginDto): Promise<any> {
+    return this.auth.login(loginDto);
   }
 }
