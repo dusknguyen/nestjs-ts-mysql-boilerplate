@@ -1,34 +1,56 @@
 import { Injectable } from '@nestjs/common';
-import { ACCOUNT_NOT_FOUND } from 'src/constants';
-import { UtilService } from 'src/modules/common';
-import { AuthenticationService, Payload } from 'src/modules/common/authentication';
-import { NormalResponse } from 'src/modules/share';
-
 import { LoginDto } from '../dtos';
-
+import { InjectRepository } from '@nestjs/typeorm';
+import { Roles, User } from 'entities';
+import { Repository } from 'typeorm';
+import { ADMIN_ROLES } from 'shared/constants';
+import { hashPassword } from 'shared/crypto/hash';
+/**
+ *
+ */
 @Injectable()
 export class AuthService {
-  constructor(private util: UtilService, private authenticationService: AuthenticationService) {}
+  /**
+   *
+   */
+  constructor(
+    @InjectRepository(Roles) private rolesRepository: Repository<Roles>,
+    @InjectRepository(User) private usersRepository: Repository<User>,
+  ) {}
 
   /**
-   * See test/e2e/jwt-authentication.spec.ts
    */
-  public async login(loginDto: LoginDto): Promise<NormalResponse> {
-    const check = await this.authenticationService.validateUser(loginDto.username, loginDto.password);
-    if (!check) {
-      throw ACCOUNT_NOT_FOUND;
-    }
-    // eslint-disable-next-line @typescript-eslint/typedef
-    const roleslist = check.roles;
-    const user = {
-      userId: check.id,
-      username: check.name,
-      roles: roleslist,
-    };
-    return this.util.buildSuccessResponse(this.authenticationService.jwtSign(user));
+  public async login(_loginDto: LoginDto): Promise<any> {
+    const user = await this.usersRepository.findOneBy({ id: 1 });
+    return user;
   }
 
-  public jwtCheck(user: Payload): NormalResponse {
-    return this.util.buildSuccessResponse(user);
+  /**
+   *
+   */
+  public async initRoles(): Promise<void> {
+    const check = await this.rolesRepository.find();
+    if (!check || check.length === 0) {
+      const admin = new Roles();
+      admin.id = ADMIN_ROLES;
+      await this.rolesRepository.save(admin);
+    }
+  }
+
+  /**
+   *
+   */
+  public async initAdmin(): Promise<void> {
+    const userAdmin = await this.usersRepository.find();
+    if (!userAdmin || userAdmin.length === 0) {
+      const username = 'admin';
+      const password = process.env['ADMIN_PASSWORD'] || '123456';
+      const email = 'admin@gmail.com';
+      const newUserAdmin = new User();
+      newUserAdmin.name = username;
+      newUserAdmin.password = await hashPassword(password); // Use argon2 to hash the password
+      newUserAdmin.email = email;
+      await this.usersRepository.save(newUserAdmin);
+    }
   }
 }

@@ -64,9 +64,7 @@ class BarQueryDto {} //= bar-query.dtos.ts
 // https://stackoverflow.com/questions/541912
 // https://stackoverflow.com/questions/2814805
 interface User {}
-
 interface CustomeUser extends User {}
-
 interface ThirdCustomeUser extends CustomeUser {}
 ```
 

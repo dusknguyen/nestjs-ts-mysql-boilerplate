@@ -8,17 +8,24 @@ import {
   HttpHealthIndicator,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
-import { Public } from 'src/modules/common/decorators';
-
 /**
  * https://docs.nestjs.com/recipes/terminus
  */
 @ApiTags('health')
 @Controller('health')
 export class HealthController {
-  constructor(private health: HealthCheckService, private http: HttpHealthIndicator, private db: TypeOrmHealthIndicator) {}
+  /**
+   *
+   */
+  constructor(
+    private health: HealthCheckService,
+    private http: HttpHealthIndicator,
+    private db: TypeOrmHealthIndicator,
+  ) {}
 
-  @Public()
+  /**
+   *
+   */
   @Get('health')
   @HealthCheck()
   public async check(): Promise<HealthCheckResult> {

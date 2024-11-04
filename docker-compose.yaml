@@ -1,4 +1,4 @@
-version: '3.1'
+version: '3.8'
 services:
   dbmysql:
     image: mysql:8.0
@@ -37,6 +37,11 @@ services:
       - NODE_ENV=development
       # Redis
       - REDIS_URL=redis://redis:6379
+      # S3 Settings
+      - S3_ENDPOINT=s3.amazonaws.com
+      - S3_ACCESS_KEY=${AWS_ACCESS_KEY_ID}   # AWS Access Key
+      - S3_SECRET_KEY=${AWS_SECRET_ACCESS_KEY} # AWS Secret Key
+      - S3_REGION=us-east-1
     depends_on:
       - dbmysql
       - redis

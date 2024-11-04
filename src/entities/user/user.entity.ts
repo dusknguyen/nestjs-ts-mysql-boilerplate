@@ -1,32 +1,34 @@
-import { BaseEntity, Column, Entity, ManyToMany, PrimaryColumn } from 'typeorm';
+import { BaseEntity, Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Roles } from './role.entity';
-
+/**
+ *
+ */
 @Entity('user')
 export class User extends BaseEntity {
-  @PrimaryColumn({
-    type: 'varchar',
-    length: 36,
-    name: 'id',
-  })
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
+
   @Column('varchar', {
     nullable: false,
-    length: 255,
+    length: 256,
     name: 'name',
   })
   name!: string;
+
   @Column('varchar', {
     nullable: false,
-    length: 255,
+    length: 256,
     name: 'password',
   })
   password!: string;
+
   @Column('varchar', {
     nullable: true,
-    length: 255,
+    length: 256,
     name: 'email',
   })
   email!: string;
+
   @ManyToMany(() => Roles, (roles) => roles.id)
   roles!: Roles[];
 }

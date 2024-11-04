@@ -1,25 +1,24 @@
-/* eslint-disable no-console */
-import { ValidationPipe, BadGatewayException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationError } from 'class-validator';
 import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
-
-import { RedisIoAdapter } from './adapter';
 import { middleware } from './app.middleware';
 import { AppModule } from './app.module';
+import { ValidationPipe, BadGatewayException } from '@nestjs/common';
+import { ValidationError } from 'class-validator';
+import configuration from './config';
+import { gateway } from 'app.gateway';
 
 /**
- * https://docs.nestjs.com
- * https://github.com/nestjs/nest/tree/master/sample
+ *
  */
 async function bootstrap(): Promise<void> {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const config = configuration(); // Fetch the parsed configuration
+  const isProduction = config.app.environment === 'production';
 
-  // Enable SWC if you have configured SWC in nest-cli.json
+  // Initialize NestJS application with buffer logs and conditionally configure logger
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     logger: isProduction
@@ -47,6 +46,7 @@ async function bootstrap(): Promise<void> {
       : undefined,
   });
 
+  // Global validation pipe with custom exception handling
   app.useGlobalPipes(
     new ValidationPipe({
       disableErrorMessages: true,
@@ -55,46 +55,45 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Set API versioning
-  app.setGlobalPrefix(`api/v${process.env['VERSION'] || '1'}`);
+  // Configure Redis microservice with options from config
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.REDIS,
+    options: {
+      host: config.redis.host,
+      port: config.redis.port,
+      wildcards: true,
+    },
+  });
 
+  // Set API versioning from config, fallback to '1' if not provided
+  app.setGlobalPrefix(`api/v${config.app.version || '1'}`);
+  // Apply gateway
+  gateway(app);
+  // Apply middleware
+  middleware(app);
+  // Swagger configuration
+  const swaggerOptions = new DocumentBuilder()
+    .setTitle('OpenAPI Documentation')
+    .setDescription('The sample API description')
+    .setVersion(`${config.app.version || '1'}`)
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerOptions);
+  SwaggerModule.setup('swagger', app, document, {
+    swaggerOptions: {
+      withCredentials: true,
+    },
+  });
+
+  // Configure trust proxy if in production
   if (isProduction) {
     app.enable('trust proxy');
   }
 
-  // Redis Adapter with Wildcard Subscriptions
-  const redisIoAdapter = new RedisIoAdapter(app);
-  await redisIoAdapter.connectToRedis();
-  app.useWebSocketAdapter(redisIoAdapter);
-
-  // Using Redis wildcard subscription for microservice
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.REDIS,
-    options: {
-      host: 'localhost',
-      port: 6379,
-      wildcards: true, // Enable wildcard subscriptions
-    },
-  });
-
-  // Express Middleware
-  middleware(app);
-  /** Swagger configuration*/
-  const options = new DocumentBuilder()
-    .setTitle('OpenAPI Documentation')
-    .setDescription('The sample API description')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addBasicAuth()
-    .build();
-
-  const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup('swagger', app, document);
-
-  await app.listen(process.env.PORT || 3001);
+  // Start application with configured port or default
+  await app.listen(config.app.port || 3001);
 }
 
-console.log('PORT ENV ', process.env.PORT);
 bootstrap()
-  .then(() => console.log(`Bootstrap on port ${process.env.PORT || 3000}`, new Date().toLocaleString()))
+  .then(() => console.log(`Bootstrap on port ${configuration().app.port || 3000}`, new Date().toLocaleString()))
   .catch(console.error);

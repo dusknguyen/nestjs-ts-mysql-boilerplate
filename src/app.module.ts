@@ -1,70 +1,97 @@
-/* eslint-disable import/no-extraneous-dependencies */
-/* eslint-disable @typescript-eslint/no-misused-promises */
-
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/cache-manager';
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, ClassSerializerInterceptor } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import ormConfig from 'database/dataSource';
+import { AuthModule } from './modules/auth';
+import { CommonModule, ExceptionsFilter, LoggerMiddleware } from './core';
+import { HealthModule } from './modules/health';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { GqlModule } from 'modules/gql';
+import configuration from 'config';
 import { RedisClientOptions } from 'redis';
 
-import { configuration } from './config';
-import { AuthModule } from './modules/auth';
-import { ClientModule } from './modules/client/client.module';
-import { CommonModule, ExceptionsFilter, LoggerMiddleware } from './modules/common';
-import { CountryModule } from './modules/country';
-import { HealthModule } from './modules/health';
-import { InitDbModule } from './modules/init/init.module';
-import { MessageModule } from './modules/message';
-
+/**
+ *
+ */
 @Module({
   imports: [
-    // https://docs.nestjs.com/techniques/configuration
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
     }),
-    BullModule.forRoot({
-      redis: {
-        host: process.env['REDIS_HOST'] || 'localhost',
-        port: Number(process.env['REDIS_PORT'] || '6379'),
-      },
-    }),
-    CacheModule.register<RedisClientOptions>({
-      isGlobal: true,
-      url: `redis://${process.env['REDIS_HOST'] || 'localhost'}:${Number(process.env['REDIS_PORT'] || '6379')}`,
-      ttl: 10, // seconds
-      max: 100, // maximum number of items in cache
-    }),
-    TypeOrmModule.forRootAsync({
-      useFactory: (config: ConfigService) => ({
-        ...config.get('db'),
+
+    // Use ConfigService to set up BullModule for Redis
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('redis.host', 'localhost'),
+          port: configService.get<number>('redis.port', 6379),
+        },
       }),
       inject: [ConfigService],
     }),
+
+    // CacheModule using Redis configuration from ConfigService
+    CacheModule.registerAsync<RedisClientOptions>({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        isGlobal: true,
+        url: `redis://${configService.get<string>('redis.host', 'localhost')}:${configService.get<number>('redis.port', 6379)}`,
+        ttl: 10, // seconds
+        max: 100, // max number of items in cache
+      }),
+      inject: [ConfigService],
+    }),
+
+    // TypeOrmModule configured using async factory with external ORM configuration
+    TypeOrmModule.forRootAsync({
+      useFactory: async () => ({
+        ...(await ormConfig).options,
+      }),
+    }),
+
+    // Static files serving configuration
     ServeStaticModule.forRoot({
       rootPath: `${__dirname}/../public`,
       renderPath: '/',
     }),
-    // Service Modules
-    CommonModule, // Global
-    ClientModule, // Control Clients
+
+    // GraphQL configuration
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      path: '/graphql',
+      driver: ApolloDriver,
+      autoSchemaFile: true,
+      playground: true,
+      introspection: true,
+    }),
+
+    // Application modules
+    CommonModule,
+    GqlModule,
     HealthModule,
-    InitDbModule,
     AuthModule,
-    CountryModule,
-    MessageModule,
   ],
   providers: [
     {
       provide: APP_FILTER,
       useClass: ExceptionsFilter,
     },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor,
+    },
   ],
 })
 export class AppModule implements NestModule {
+  /**
+   *
+   */
   public configure(consumer: MiddlewareConsumer): void {
     consumer.apply(LoggerMiddleware).forRoutes('*');
   }
