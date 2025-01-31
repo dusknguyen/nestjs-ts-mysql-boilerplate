@@ -1,13 +1,10 @@
 # Guide
 
 - How fe call to server:
-
   - [Rest APIs](#rest-apis)
   - [GraphQL](#GraphQL)
   - [Socket.io](#socketio)
-
 - How to use:
-
   - [Requirement](#requirement)
   - [Run API application](#run-api-application)
     - [1. Create a `.env` file](#1-create-a-env-file)

@@ -1,71 +1,90 @@
-/* eslint-disable import/no-extraneous-dependencies */
-/* eslint-disable @typescript-eslint/no-misused-promises */
-
-import { BullModule } from '@nestjs/bull';
-import { CacheModule } from '@nestjs/cache-manager';
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { RedisClientOptions } from 'redis';
-
-import { configuration } from './config';
-import { AuthModule } from './modules/auth';
-import { ClientModule } from './modules/client/client.module';
-import { CommonModule, ExceptionsFilter, LoggerMiddleware } from './modules/common';
-import { CountryModule } from './modules/country';
+import { BullModule } from '@nestjs/bullmq';
+import { Module, ClassSerializerInterceptor } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { CommonModule, ExceptionsFilter } from './core';
 import { HealthModule } from './modules/health';
-import { InitDbModule } from './modules/init/init.module';
-import { MessageModule } from './modules/message';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { GqlModule } from 'modules/gql';
+import configuration from 'config';
+import { AuthModule } from 'modules/auth/auth.module';
+import { CacheModule } from 'shared/cache';
+import KeyvRedis, { Keyv } from '@keyv/redis';
+import { FastifyRequest } from 'fastify';
+import { GatewayModule } from 'modules/gateway/gateway.module';
 
+const config = configuration();
+const isProduction = config.app.environment === 'production';
+/**
+ * Main application module. Sets up all dependencies, including
+ * caching, GraphQL, authentication, and various custom modules.
+ */
 @Module({
   imports: [
-    // https://docs.nestjs.com/techniques/configuration
     ConfigModule.forRoot({
-      isGlobal: true,
-      load: [configuration],
+      isGlobal: true, // Makes the configuration available globally
+      load: [configuration], // Loads configuration from the 'config' module
     }),
+
+    // BullModule configuration for Redis connection
     BullModule.forRoot({
-      redis: {
-        host: process.env['REDIS_HOST'] || 'localhost',
-        port: Number(process.env['REDIS_PORT'] || '6379'),
+      connection: {
+        host: config.redis.host, // Redis host
+        port: config.redis.port, // Redis port
       },
     }),
-    CacheModule.register<RedisClientOptions>({
-      isGlobal: true,
-      url: `redis://${process.env['REDIS_HOST'] || 'localhost'}:${Number(process.env['REDIS_PORT'] || '6379')}`,
-      ttl: 10, // seconds
-      max: 100, // maximum number of items in cache
+
+    // CacheModule configuration with Redis store using Keyv
+    CacheModule.registerAsync({
+      useFactory: async () => {
+        const keyv = new Keyv(
+          new KeyvRedis(`redis://${config.redis.host}:${config.redis.port}`, {
+            namespace: 'app-module-cache', // Namespace for cache entries
+          }),
+        );
+        return {
+          keyv,
+          ttl: 60 * 60000, // Cache TTL in milliseconds (1 hour)
+          max: 100, // Maximum number of items in cache
+        };
+      },
     }),
-    TypeOrmModule.forRootAsync({
-      useFactory: (config: ConfigService) => ({
-        ...config.get('db'),
+
+    // GraphQL configuration using Apollo Driver
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      path: `/graphql`, // GraphQL endpoint
+      driver: ApolloDriver, // Use Apollo as the GraphQL driver
+      autoSchemaFile: true, // Automatically generate the schema file
+      sortSchema: true, // Sort schema for readability
+      playground: !isProduction, // Enable GraphQL Playground in development
+      introspection: true, // Enable introspection of the schema
+      context: ({ req }: { req: FastifyRequest }) => ({ req }), // Inject request into context
+      formatError: (error) => ({
+        message: error.message, // Format error message
+        code: error.extensions?.['code'] || 'INTERNAL_SERVER_ERROR', // Set error code
+        status: (error.extensions?.['exception'] as any)?.status || 500, // Set status code
       }),
-      inject: [ConfigService],
     }),
-    ServeStaticModule.forRoot({
-      rootPath: `${__dirname}/../public`,
-      renderPath: '/',
-    }),
-    // Service Modules
-    CommonModule, // Global
-    ClientModule, // Control Clients
-    HealthModule,
-    InitDbModule,
-    AuthModule,
-    CountryModule,
-    MessageModule,
+
+    // Application modules
+    CommonModule, // Core shared functionality
+    GqlModule, // GraphQL related functionality
+    HealthModule, // Health check functionality
+    AuthModule, // Authentication functionality
+    GatewayModule, // Gateway functionality for WebSocket or microservices
   ],
   providers: [
+    // Global exception filter
     {
       provide: APP_FILTER,
-      useClass: ExceptionsFilter,
+      useClass: ExceptionsFilter, // Handle exceptions across the application
+    },
+    // Global interceptor for class serialization
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ClassSerializerInterceptor, // Automatically serialize objects based on their decorators
     },
   ],
 })
-export class AppModule implements NestModule {
-  public configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(LoggerMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}
