@@ -1,99 +1,93 @@
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { WinstonModule } from 'nest-winston';
-import winston from 'winston';
 import { middleware } from './app.middleware';
 import { AppModule } from './app.module';
 import { ValidationPipe, BadGatewayException } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
 import configuration from './config';
-import { gateway } from 'app.gateway';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import { HEADER_KEY } from 'shared/constants/strategy.constant';
+import { loggerInstance } from 'core/services/logger.service';
+import { IncomingMessage } from 'http';
+import genReqId from 'core/request-context/genReqId';
 
 /**
- *
+ * Main application bootstrap function that configures and starts the NestJS app.
  */
 async function bootstrap(): Promise<void> {
-  const config = configuration(); // Fetch the parsed configuration
+  const config = configuration(); // Fetch configuration from the 'config' module
   const isProduction = config.app.environment === 'production';
+  // Initialize NestJS application with Fastify as the HTTP adapter and custom logger
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({
+      loggerInstance: loggerInstance, // Custom logger configuration
+      genReqId: (req: IncomingMessage) => genReqId(req), // Request ID generator for tracking
+    }),
+  );
 
-  // Initialize NestJS application with buffer logs and conditionally configure logger
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    bufferLogs: true,
-    logger: isProduction
-      ? WinstonModule.createLogger({
-          level: 'info',
-          format: winston.format.json(),
-          transports: [
-            new winston.transports.File({
-              filename: 'logs/error.log',
-              level: 'error',
-            }),
-            new winston.transports.File({
-              filename: 'logs/query.log',
-              level: 'query',
-            }),
-            new winston.transports.File({
-              filename: 'logs/info.log',
-              level: 'info',
-            }),
-            new winston.transports.Console({
-              format: winston.format.combine(winston.format.colorize(), winston.format.json()),
-            }),
-          ],
-        })
-      : undefined,
-  });
-
-  // Global validation pipe with custom exception handling
+  // Apply global validation pipe with custom exception handling for validation errors
   app.useGlobalPipes(
     new ValidationPipe({
-      disableErrorMessages: true,
-      transform: true,
+      disableErrorMessages: true, // Hide detailed error messages from the client
+      transform: true, // Automatically transform incoming payloads to DTO objects
       exceptionFactory: (validationErrors: ValidationError[] = []) => new BadGatewayException(validationErrors),
     }),
   );
 
-  // Configure Redis microservice with options from config
+  // Set up a microservice (Kafka transport in this case)
   app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.REDIS,
+    transport: Transport.KAFKA,
     options: {
-      host: config.redis.host,
-      port: config.redis.port,
-      wildcards: true,
+      client: {
+        brokers: ['localhost:8354'], // Kafka broker configuration
+      },
     },
   });
 
-  // Set API versioning from config, fallback to '1' if not provided
+  // Set the global API prefix using versioning from the config
   app.setGlobalPrefix(`api/v${config.app.version || '1'}`);
-  // Apply gateway
-  gateway(app);
-  // Apply middleware
-  middleware(app);
-  // Swagger configuration
-  const swaggerOptions = new DocumentBuilder()
-    .setTitle('OpenAPI Documentation')
-    .setDescription('The sample API description')
-    .setVersion(`${config.app.version || '1'}`)
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerOptions);
-  SwaggerModule.setup('swagger', app, document, {
-    swaggerOptions: {
-      withCredentials: true,
-    },
-  });
 
-  // Configure trust proxy if in production
-  if (isProduction) {
-    app.enable('trust proxy');
+  // Apply custom middleware for the application
+  middleware(app);
+
+  if (!isProduction) {
+    // Configure Swagger (OpenAPI) documentation for the API
+    const swaggerOptions = new DocumentBuilder()
+      .setTitle('OpenAPI Documentation') // Set title of the API documentation
+      .setDescription('The sample API description') // Set description
+      .setVersion(`${config.app.version || '1'}`) // Set API version from config
+      .addBearerAuth() // Enable bearer authentication
+      .addApiKey(
+        {
+          name: HEADER_KEY.API_KEY, // API key for authentication
+          in: 'header',
+          type: 'apiKey',
+        },
+        HEADER_KEY.API_KEY,
+      )
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerOptions); // Generate the Swagger document
+    SwaggerModule.setup('swagger', app, document, {
+      swaggerOptions: {
+        withCredentials: true, // Enable cross-origin credentials in Swagger UI
+      },
+    });
   }
 
-  // Start application with configured port or default
-  await app.listen(config.app.port || 3001);
+  // Start the application and listen on the configured port
+  await app.listen(config.app.port || 3001); // Default to port 3001 if not set in config
 }
 
+// Bootstrap the application and log success message
 bootstrap()
-  .then(() => console.log(`Bootstrap on port ${configuration().app.port || 3000}`, new Date().toLocaleString()))
+  .then(() =>
+    console.log(
+      `Bootstrap on port ${configuration().app.port || 3000}`,
+      new Date().toLocaleString(),
+      `\n OpenAPI Documentation: http://localhost:${configuration().app.port || 3000}/swagger`,
+      `\n Graphql Documentation: http://localhost:${configuration().app.port || 3000}/graphql`,
+    ),
+  )
   .catch(console.error);

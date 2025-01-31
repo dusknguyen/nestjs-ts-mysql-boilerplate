@@ -1,60 +1,16 @@
-import { BadGatewayException } from '@nestjs/common';
-import CryptoJS from 'crypto-js';
-import argon2 from 'argon2';
-import randomBytes from 'randombytes';
+import forge from 'node-forge';
+
 /**
- * @param {string} data - The plain text to encrypt.
- * @returns {string} - The encrypted data
- */
-export function hash512(data: string): string {
-  const hash = CryptoJS.SHA512(data);
-  return hash.toString(CryptoJS.enc.Hex);
-}
-/**
+ * Hashes the input data using SHA-512.
  *
+ * @param data The string to be hashed.
+ * @returns The SHA-512 hash of the input data, represented as a hexadecimal string.
  */
-export function hash256(data: string): string {
-  const hash = CryptoJS.SHA256(data);
-  return hash.toString(CryptoJS.enc.Hex);
-}
-/**
- *
- */
-export async function hashPassword(text: string): Promise<string> {
-  try {
-    const salt = randomBytes(16);
-    const secret = randomBytes(32);
-    const associatedData = randomBytes(16);
-    const saltBase64 = salt.toString('base64');
-    const secretBase64 = secret.toString('base64');
-    const associatedDataBase64 = associatedData.toString('base64');
-    const hashed: string = await argon2.hash(hash256(text), {
-      type: argon2.argon2id,
-      hashLength: 32,
-      timeCost: 3,
-      memoryCost: 2 ** 16,
-      parallelism: 1,
-      salt: Buffer.from(saltBase64, 'base64'),
-      secret: Buffer.from(secretBase64, 'base64'),
-      associatedData: Buffer.from(associatedDataBase64, 'base64'),
-    });
-    return hashed;
-  } catch (e) {
-    throw new BadGatewayException(e);
-  }
-}
-// argon2 for comparing passwords
-/**
- *
- */
-export async function comparePassword(password: string, oldPassword?: string): Promise<boolean> {
-  try {
-    if (password && oldPassword) {
-      const passwordEqual: boolean = await argon2.verify(oldPassword, hash256(password));
-      return passwordEqual;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
+export const hash512 = (data: string): string => {
+  // Create a SHA-512 hash instance using node-forge
+  return forge.md.sha512
+    .create()
+    .update(data) // Update the hash with the provided data
+    .digest() // Finalize the hash calculation
+    .toHex(); // Convert the hash result to a hexadecimal string
+};

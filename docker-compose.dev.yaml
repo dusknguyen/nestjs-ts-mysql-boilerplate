@@ -19,5 +19,23 @@ services:
       - 8353:6379
     expose:
       - 6379
+  kafka:
+    image: bitnami/kafka:3.5
+    restart: always
+    environment:
+      KAFKA_BROKER_ID: "1"
+      KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092"
+      KAFKA_CFG_LOG_DIRS: "/bitnami/kafka/logs"
+    ports:
+      - 8354:9092
+    depends_on:
+      - zookeeper
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    restart: always
+    ports:
+      - 8355:2181
 volumes:
   db_data: { }

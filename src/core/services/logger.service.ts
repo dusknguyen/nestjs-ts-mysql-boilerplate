@@ -1,76 +1,152 @@
-import { Injectable, Logger, Scope } from '@nestjs/common';
-import { RequestContext } from './request-context.service';
+import { Injectable, Scope } from '@nestjs/common';
+import pino from 'pino';
+import { RequestContext } from 'core/request-context/request-context.dto';
+import configuration from 'config';
+
+// Load configuration and determine if the environment is production
+const config = configuration();
+const isProduction = config.app.environment === 'production';
+
+// Initialize transport streams for pino logger based on environment
+const transports = [];
+if (!isProduction) {
+  transports.push(
+    pino.transport({
+      target: 'pino-pretty', // Pretty print logs for development
+      options: {
+        colorize: true, // Enable colorization for easier reading
+        translateTime: 'SYS:standard', // Standardize time format
+        ignore: 'pid,hostname', // Ignore unnecessary fields
+      },
+    }),
+  );
+}
+if (isProduction) {
+  transports.push(
+    pino.transport({
+      target: 'pino/file', // Log errors to file in production
+      options: { destination: 'logs/error.log', level: 'error' },
+    }),
+    pino.transport({
+      target: 'pino/file', // Log queries to file in production
+      options: { destination: 'logs/query.log', level: 'query' },
+    }),
+    pino.transport({
+      target: 'pino/file', // Log info messages to file in production
+      options: { destination: 'logs/info.log', level: 'info' },
+    }),
+  );
+}
+
+// Create a logger instance with the defined transport streams
+export const loggerInstance = pino(
+  pino.multistream(transports), // Enable multiple transport streams
+);
 
 /**
- *
+ * Custom logging service with dynamic context support.
+ * Uses pino for structured logging, supporting different log levels.
  */
 @Injectable({ scope: Scope.TRANSIENT })
-export class LoggerCustom extends Logger {
+export class AppLogger {
+  private context?: string; // Context for the logger to tag logs
+
   /**
+   * Constructor to initialize the logger service.
+   */
+  constructor() {}
+
+  /**
+   * Sets the context for the logger to identify where the log is coming from.
    *
+   * @param context - Context to be set for the logger.
    */
-  constructor(
-    private req: RequestContext,
-    context: string,
-  ) {
-    super(context);
+  public setContext(context: string): void {
+    this.context = context;
   }
 
   /**
-   * Get the request context ID if available
+   * Logs an error message.
+   *
+   * @param ctx - RequestContext to capture additional request-specific information.
+   * @param message - The error message to log.
+   * @param meta - Optional metadata for additional context.
    */
-  private get reqContext(): string {
-    return this.req.context?.id.toString() || '';
+  error(ctx: RequestContext, message: string, meta?: Record<string, any>) {
+    loggerInstance.error({
+      message,
+      contextName: this.context,
+      ctx,
+      timestamp: new Date().toISOString(),
+      ...meta,
+    });
   }
 
   /**
-   * Custom log method override
+   * Logs a warning message.
+   *
+   * @param ctx - RequestContext for additional context.
+   * @param message - The warning message to log.
+   * @param meta - Optional metadata for further context.
    */
-  public override log(message: unknown, context?: string): void {
-    super.log(message, this.devContext(context));
+  warn(ctx: RequestContext, message: string, meta?: Record<string, any>) {
+    loggerInstance.warn({
+      message,
+      contextName: this.context,
+      ctx,
+      timestamp: new Date().toISOString(),
+      ...meta,
+    });
   }
 
   /**
-   * Custom error method override
+   * Logs a debug message.
+   *
+   * @param ctx - RequestContext to capture context.
+   * @param message - The debug message to log.
+   * @param meta - Optional metadata for additional context.
    */
-  public override error(message: unknown, trace?: string, context?: string): void {
-    console.error(this.prodContext(context), message, '\n', trace);
+  debug(ctx: RequestContext, message: string, meta?: Record<string, any>) {
+    loggerInstance.debug({
+      message,
+      contextName: this.context,
+      ctx,
+      timestamp: new Date().toISOString(),
+      ...meta,
+    });
   }
 
   /**
-   * Get the current context or fallback to default
+   * Logs a trace message.
+   *
+   * @param ctx - RequestContext for request-specific context.
+   * @param message - The trace message to log.
+   * @param meta - Optional metadata for additional context.
    */
-  private getContext(context?: string): string {
-    return context || this.context || '';
+  trace(ctx: RequestContext, message: string, meta?: Record<string, any>) {
+    loggerInstance.trace({
+      message,
+      contextName: this.context,
+      ctx,
+      timestamp: new Date().toISOString(),
+      ...meta,
+    });
   }
 
   /**
-   * Production logging context with timestamp and optional request context ID
+   * Logs a general info message.
+   *
+   * @param ctx - RequestContext to capture additional context.
+   * @param message - The info message to log.
+   * @param meta - Optional metadata for further context.
    */
-  private prodContext(context?: string): string {
-    let prefix = new Date().toLocaleString();
-    if (this.reqContext) {
-      prefix += ` [${this.reqContext}]`;
-    }
-    const ctx = this.getContext(context);
-    if (ctx) {
-      prefix += ` [${ctx}]`;
-    }
-    return prefix;
-  }
-
-  /**
-   * Development logging context with request context ID if available
-   */
-  private devContext(context?: string): string {
-    const prefix = [];
-    if (this.reqContext) {
-      prefix.push(this.reqContext);
-    }
-    const ctx = this.getContext(context);
-    if (ctx) {
-      prefix.push(ctx);
-    }
-    return `[dev][${context || 'info'}]`;
+  log(ctx: RequestContext, message: string, meta?: Record<string, any>) {
+    loggerInstance.info({
+      message,
+      contextName: this.context,
+      ctx,
+      timestamp: new Date().toISOString(),
+      ...meta,
+    });
   }
 }

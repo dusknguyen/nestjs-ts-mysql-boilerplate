@@ -1,58 +1,60 @@
-import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import compression from 'compression';
-import cookieParser from 'cookie-parser';
-import session from 'express-session';
-import helmet from 'helmet';
-import passport from 'passport';
-import express from 'express';
-import redisStore from 'core/redis/session.store';
+import Fastify from 'fastify';
+import fastifyCors from '@fastify/cors';
+import configuration from 'config';
+import path from 'path';
+import { hash512 } from 'shared/crypto/hash';
+import fastifyIO from 'fastify-socket.io';
+
+const config = configuration();
 
 /**
+ * Setup middleware and essential plugins for the Fastify server.
  *
+ * @param fastify The Fastify instance.
+ * @returns The Fastify instance with middleware and plugins registered.
  */
-export async function middleware(app: INestApplication): Promise<INestApplication> {
-  // Inject ConfigService for accessing environment variables
-  const configService = app.get(ConfigService);
-  const isProduction = configService.get<string>('app.environment') === 'production';
-  const sessionSecret = configService.get<string>('app.sessionSecret', 'defaultSecret'); // Default if missing
+export async function middleware(fastify: ReturnType<typeof Fastify>): Promise<ReturnType<typeof Fastify>> {
+  const isProduction = config.app.environment === 'production';
 
-  // Enable CORS with specified options
-  app.enableCors({
-    origin: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    preflightContinue: false,
-    optionsSuccessStatus: 200,
-    credentials: true,
+  // Enable Cross-Origin Resource Sharing (CORS)
+  await fastify.register(fastifyCors, {
+    origin: true, // Allow all origins
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'], // Allowed HTTP methods
+    credentials: true, // Allow credentials such as cookies
   });
 
-  // Register essential middlewares
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
+  // Register essential plugins for compression and cookie handling
+  await fastify.register(require('@fastify/compress'));
+  await fastify.register(require('@fastify/cookie'));
 
-  // Configure session with Redis store and session secret from ConfigService
-  app.use(
-    session({
-      secret: sessionSecret,
-      resave: false,
-      saveUninitialized: true,
-      cookie: {
-        secure: isProduction,
-        maxAge: 1 * 60 * 60 * 1000, // 1 hour
-      },
-      store: redisStore,
-    }),
-  );
+  // Configure session management
+  await fastify.register(require('@fastify/session'), {
+    secret: hash512('session'), // Secret used to sign the session ID cookie
+    cookie: {
+      secure: isProduction, // Secure cookie in production environment
+      maxAge: 1 * 60 * 60 * 1000, // 1 hour session expiration
+    },
+    saveUninitialized: false, // Do not save uninitialized sessions
+    resave: false, // Do not force saving the session to the store on every request
+  });
 
-  app.use(cookieParser());
-  app.use(compression());
-
-  // Configure Helmet with CSP disabled in development mode
-  app.use(helmet({ contentSecurityPolicy: isProduction ? undefined : false }));
+  // Register Helmet for securing HTTP headers
+  await fastify.register(require('@fastify/helmet'), {
+    contentSecurityPolicy: isProduction ? undefined : false, // Disable CSP in non-production for easier dev setup
+  });
 
   // Initialize Passport for authentication
-  app.use(passport.initialize());
-  app.use(passport.session());
+  await fastify.register(require('@fastify/passport').initialize());
+  await fastify.register(require('@fastify/passport').secureSession());
 
-  return app;
+  // Serve static files from the 'public' folder
+  await fastify.register(require('@fastify/static'), {
+    root: path.join(__dirname, '..', 'public'),
+    head: false, // Disable 'head' property for static files
+  });
+
+  // Register Socket.IO for WebSocket functionality
+  await fastify.register(fastifyIO);
+
+  return fastify;
 }

@@ -1,15 +1,34 @@
 import dotenv from 'dotenv';
+import { JwtAlgorithm } from 'shared/type/algorithm';
 import { z } from 'zod';
 
 dotenv.config();
 
-// Define the schema for environment variables
+// Define and validate environment variables schema
 const configSchema = z.object({
   // General settings
   PORT: z.string().regex(/^\d+$/).transform(Number).default('8349'),
-  JWT_SECRET: z.string().default('secretKey'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   VERSION: z.string().regex(/^\d+$/).transform(Number).default('1'),
+
+  // JWT Configuration
+  JWT_CUSTOMER_ACCESS_PUBLIC_KEY: z.string().optional().default(''),
+  JWT_CUSTOMER_ACCESS_PRIVATE_KEY: z.string().optional().default(''),
+  JWT_CUSTOMER_ACCESS_ALGORITHMS: z.string().optional().default('RS256'),
+  JWT_CUSTOMER_REFRESH_PUBLIC_KEY: z.string().optional().default(''),
+  JWT_CUSTOMER_REFRESH_PRIVATE_KEY: z.string().optional().default(''),
+  JWT_CUSTOMER_REFRESH_ALGORITHMS: z.string().optional().default('RS256'),
+  JWT_EMPLOYEE_ACCESS_PUBLIC_KEY: z.string().optional().default(''),
+  JWT_EMPLOYEE_ACCESS_PRIVATE_KEY: z.string().optional().default(''),
+  JWT_EMPLOYEE_ACCESS_ALGORITHMS: z.string().optional().default('RS256'),
+  JWT_EMPLOYEE_REFRESH_PUBLIC_KEY: z.string().optional().default(''),
+  JWT_EMPLOYEE_REFRESH_PRIVATE_KEY: z.string().optional().default(''),
+  JWT_EMPLOYEE_REFRESH_ALGORITHMS: z.string().optional().default('RS256'),
+
+  // Crypto Keys
+  PUBLIC_KEY_PEM: z.string().default(''),
+  PRIVATE_KEY_PEM: z.string().default(''),
+
   // MySQL settings
   DB_TYPE: z.string().default('mysql'),
   DB_HOST: z.string().default('127.0.0.1'),
@@ -27,17 +46,44 @@ const configSchema = z.object({
 // Parse and validate environment variables
 const config = configSchema.parse(process.env);
 
-// Define the config object based on parsed environment variables
+// Configuration object
 const configuration = () => ({
-  // General configuration
   app: {
     port: config.PORT,
-    jwtSecret: config.JWT_SECRET,
     environment: config.NODE_ENV,
     version: config.VERSION,
+    apiKey: 'key',
   },
-
-  // Database configuration
+  jwt: {
+    customer: {
+      accessToken: {
+        publicKey: config.JWT_CUSTOMER_ACCESS_PUBLIC_KEY,
+        privateKey: config.JWT_CUSTOMER_ACCESS_PRIVATE_KEY,
+        algorithms: config.JWT_CUSTOMER_ACCESS_ALGORITHMS as JwtAlgorithm,
+      },
+      refreshToken: {
+        publicKey: config.JWT_CUSTOMER_REFRESH_PUBLIC_KEY,
+        privateKey: config.JWT_CUSTOMER_REFRESH_PRIVATE_KEY,
+        algorithms: config.JWT_CUSTOMER_REFRESH_ALGORITHMS as JwtAlgorithm,
+      },
+    },
+    employee: {
+      accessToken: {
+        publicKey: config.JWT_EMPLOYEE_ACCESS_PUBLIC_KEY,
+        privateKey: config.JWT_EMPLOYEE_ACCESS_PRIVATE_KEY,
+        algorithms: config.JWT_EMPLOYEE_ACCESS_ALGORITHMS as JwtAlgorithm,
+      },
+      refreshToken: {
+        publicKey: config.JWT_EMPLOYEE_REFRESH_PUBLIC_KEY,
+        privateKey: config.JWT_EMPLOYEE_REFRESH_PRIVATE_KEY,
+        algorithms: config.JWT_EMPLOYEE_REFRESH_ALGORITHMS as JwtAlgorithm,
+      },
+    },
+  },
+  crypto: {
+    publicKeyPem: config.PUBLIC_KEY_PEM,
+    privateKeyPem: config.PRIVATE_KEY_PEM,
+  },
   db: {
     type: config.DB_TYPE,
     host: config.DB_HOST,
@@ -48,16 +94,8 @@ const configuration = () => ({
     extra: {
       connectionLimit: config.DB_CONNECTION_LIMIT,
     },
-    synchronize: true,
-    autoLoadEntities: true,
-    migrationsRun: true,
-    migrationsTableName: 'migrations_typeorm',
-    cli: {
-      migrationsDir: 'migrations',
-    },
+    autoLoadEntities: config.NODE_ENV === 'development',
   },
-
-  // Redis configuration
   redis: {
     host: config.REDIS_HOST,
     port: config.REDIS_PORT,
@@ -65,5 +103,4 @@ const configuration = () => ({
 });
 
 export type Config = ReturnType<typeof configuration>;
-
 export default configuration;
