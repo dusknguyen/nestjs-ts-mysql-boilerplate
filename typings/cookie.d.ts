@@ -103,8 +103,8 @@ type FastifyCookiePlugin = FastifyPluginCallback<NonNullable<fastifyCookie.Fasti
 declare namespace fastifyCookie {
   // SignerBase interface to handle signing and unsigning cookies
   interface SignerBase {
-    sign: (value: string) => string;  // Method to sign a cookie value
-    unsign: (input: string) => UnsignResult;  // Method to unsign a cookie value
+    sign: (value: string) => string; // Method to sign a cookie value
+    unsign: (input: string) => UnsignResult; // Method to unsign a cookie value
   }
 
   // Signer class to create cookie signers with a secret
@@ -116,27 +116,27 @@ declare namespace fastifyCookie {
 
   // Options for serializing cookies
   export interface SerializeOptions {
-    domain?: string;  // Domain for the cookie
-    encode?(val: string): string;  // Custom encoding function for cookie value
-    expires?: Date;  // Expiration date for the cookie
-    httpOnly?: boolean;  // Whether the cookie is accessible only via HTTP(S) (not JS)
-    maxAge?: number;  // Max age in seconds for the cookie
-    partitioned?: boolean;  // Whether the cookie is partitioned
-    path?: string;  // Path for which the cookie is valid
-    sameSite?: 'lax' | 'none' | 'strict' | boolean;  // SameSite policy for the cookie
-    priority?: 'low' | 'medium' | 'high';  // Priority for eviction
-    secure?: boolean;  // Whether the cookie is transmitted over HTTPS only
+    domain?: string; // Domain for the cookie
+    encode?(val: string): string; // Custom encoding function for cookie value
+    expires?: Date; // Expiration date for the cookie
+    httpOnly?: boolean; // Whether the cookie is accessible only via HTTP(S) (not JS)
+    maxAge?: number; // Max age in seconds for the cookie
+    partitioned?: boolean; // Whether the cookie is partitioned
+    path?: string; // Path for which the cookie is valid
+    sameSite?: 'lax' | 'none' | 'strict' | boolean; // SameSite policy for the cookie
+    priority?: 'low' | 'medium' | 'high'; // Priority for eviction
+    secure?: boolean; // Whether the cookie is transmitted over HTTPS only
   }
 
   // Options for serializing cookies with additional settings like signed cookies
   export interface CookieSerializeOptions extends Omit<SerializeOptions, 'secure'> {
-    secure?: boolean | 'auto';  // Automatically apply secure flag based on HTTPS
-    signed?: boolean;  // Whether the cookie should be signed
+    secure?: boolean | 'auto'; // Automatically apply secure flag based on HTTPS
+    signed?: boolean; // Whether the cookie should be signed
   }
 
   // Options for parsing cookies with an optional custom decode function
   export interface ParseOptions {
-    decode?: (encodedURIComponent: string) => string;  // Custom decode function for cookies
+    decode?: (encodedURIComponent: string) => string; // Custom decode function for cookies
   }
 
   // Hook types for Fastify lifecycle events
@@ -149,8 +149,8 @@ declare namespace fastifyCookie {
 
   // Result of unsigning a cookie
   export type UnsignResult =
-    | { valid: true; renew: boolean; value: string }  // Valid cookie
-    | { valid: false; renew: false; value: null };  // Invalid cookie
+    | { valid: true; renew: boolean; value: string } // Valid cookie
+    | { valid: false; renew: false; value: null }; // Invalid cookie
 
   // Utility methods for signing and unsigning cookies
   export const signerFactory: SignerFactory;
@@ -159,22 +159,22 @@ declare namespace fastifyCookie {
 
   // Main interface for the fastify-cookie plugin
   export interface FastifyCookie extends FastifyCookiePlugin {
-    parse: (cookieHeader: string, opts?: ParseOptions) => { [key: string]: string };  // Method to parse cookie header
-    serialize: (name: string, value: string, opts?: SerializeOptions) => string;  // Method to serialize cookie
-    signerFactory: SignerFactory;  // Factory for creating cookie signers
-    Signer: Signer;  // Signer class for cookie signing
-    sign: Sign;  // Method to sign cookies
-    unsign: Unsign;  // Method to unsign cookies
+    parse: (cookieHeader: string, opts?: ParseOptions) => { [key: string]: string }; // Method to parse cookie header
+    serialize: (name: string, value: string, opts?: SerializeOptions) => string; // Method to serialize cookie
+    signerFactory: SignerFactory; // Factory for creating cookie signers
+    Signer: Signer; // Signer class for cookie signing
+    sign: Sign; // Method to sign cookies
+    unsign: Unsign; // Method to unsign cookies
   }
 
   export const fastifyCookie: FastifyCookie;
 
   // Configuration options for the fastify-cookie plugin
   export interface FastifyCookieOptions {
-    secret?: string | string[] | Buffer | Buffer[] | Signer | SignerBase;  // Secret for signing cookies
-    algorithm?: string;  // Algorithm for signing cookies
-    hook?: HookType | false;  // Lifecycle hook for cookie processing
-    parseOptions?: CookieSerializeOptions;  // Options for parsing cookies
+    secret?: string | string[] | Buffer | Buffer[] | Signer | SignerBase; // Secret for signing cookies
+    algorithm?: string; // Algorithm for signing cookies
+    hook?: HookType | false; // Lifecycle hook for cookie processing
+    parseOptions?: CookieSerializeOptions; // Options for parsing cookies
   }
 
   // Default export for fastify-cookie plugin

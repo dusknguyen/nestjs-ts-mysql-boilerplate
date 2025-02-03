@@ -23,23 +23,17 @@ if (!isProduction) {
 }
 if (isProduction) {
   transports.push(
-    pino.transport({
-      target: 'pino/file', // Log errors to file in production
-      options: { destination: 'logs/error.log', level: 'error' },
-    }),
-    pino.transport({
-      target: 'pino/file', // Log queries to file in production
-      options: { destination: 'logs/query.log', level: 'query' },
-    }),
-    pino.transport({
-      target: 'pino/file', // Log info messages to file in production
-      options: { destination: 'logs/info.log', level: 'info' },
-    }),
+    { level: 'error', stream: pino.destination('logs/error.log') },
+    { level: 'info', stream: pino.destination('logs/info.log') },
+    { level: 'debug', stream: pino.destination('logs/debug.log') },
   );
 }
 
 // Create a logger instance with the defined transport streams
 export const loggerInstance = pino(
+  {
+    level: 'info',
+  },
   pino.multistream(transports), // Enable multiple transport streams
 );
 

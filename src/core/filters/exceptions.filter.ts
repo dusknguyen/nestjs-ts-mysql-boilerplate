@@ -67,7 +67,7 @@ export class ExceptionsFilter extends BaseExceptionFilter implements GqlExceptio
 
     const errorResponse = this.buildErrorResponse(exception, req.url, requestContext);
 
-    this.logger.warn(requestContext, errorResponse.message, {
+    this.logger.error(requestContext, errorResponse.message, {
       error: errorResponse,
       stack: (exception as Error)?.stack,
     });

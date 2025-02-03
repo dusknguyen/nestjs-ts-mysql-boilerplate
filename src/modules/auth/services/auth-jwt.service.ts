@@ -4,11 +4,10 @@ import { RequestContext } from 'core/request-context/request-context.dto';
 import { AppLogger, PrismaService } from 'core/services';
 import { hash512 } from 'shared/crypto/hash';
 import { JwtAlgorithm } from 'shared/type/algorithm';
-import { UserRefreshTokenClaims } from '../dtos/auth-token-output.dto';
-import { version as uuidVersion, v1 as uuidv1 } from 'uuid';
+import { UserAccessTokenClaims, UserRefreshTokenClaims } from '../dtos/auth-token-output.dto';
+import { version as uuidVersion } from 'uuid';
 import { validate as uuidValidate } from 'uuid';
 import { AuthToken } from '@prisma/client';
-
 /**
  * Service for handling JWT-related operations including token validation and generation.
  */
@@ -37,19 +36,24 @@ export class AuthJWTService {
    * @returns The authenticated token from the database if valid.
    */
   async validateAccessToken(token: string, publicKey: string, algorithm: JwtAlgorithm): Promise<AuthToken> {
-    const jwt = await this.jwtService.verify<UserRefreshTokenClaims>(token, {
+    const jwt = await this.jwtService.verify<UserAccessTokenClaims>(token, {
       publicKey,
       algorithms: [algorithm],
     });
 
     // Validate UUID in token
-    if (!(uuidValidate(jwt.uuid) && uuidVersion(jwt.uuid) === 4)) {
+    if (!(uuidValidate(jwt.jti) && uuidVersion(jwt.jti) === 1)) {
       throw new ForbiddenException('Invalid UUID in token');
+    }
+
+    // Validate essential claims
+    if (!jwt.iss) {
+      throw new ForbiddenException('Invalid token claims');
     }
 
     // Check if the token exists in the database
     const authToken = await this.prisma.authToken.findFirst({
-      where: { refreshToken: hash512(`${token}`) },
+      where: { userId: +jwt.sub, accessToken: hash512(`${token}`) },
     });
     if (!authToken) {
       throw new ForbiddenException('Token not found');
@@ -58,13 +62,12 @@ export class AuthJWTService {
   }
 
   /**
-   * Validates the refresh token with the provided public key and algorithm.
-   * It checks the UUID and verifies its presence in the database.
-   * @param request The request context.
-   * @param token The JWT refresh token to validate.
-   * @param publicKey The public key for token verification.
-   * @param algorithm The algorithm used for verification.
-   * @returns The authenticated token from the database if valid.
+   * Validates and verifies a refresh token.
+   * @param request RequestContext containing request-specific metadata.
+   * @param token The refresh token to validate.
+   * @param publicKey Public key for verifying the token.
+   * @param algorithm JWT algorithm used for verification.
+   * @returns AuthToken object if the token is valid.
    */
   async validateRefreshToken(request: RequestContext, token: string, publicKey: string, algorithm: JwtAlgorithm): Promise<AuthToken> {
     this.logger.log(request, this.validateRefreshToken.name);
@@ -74,13 +77,18 @@ export class AuthJWTService {
     });
 
     // Validate UUID in token
-    if (!(uuidValidate(jwt.uuid) && uuidVersion(jwt.uuid) === 4)) {
+    if (!(uuidValidate(jwt.jti) && uuidVersion(jwt.jti) === 4)) {
       throw new ForbiddenException('Invalid UUID in token');
+    }
+
+    // Validate essential claims
+    if (!jwt.iss) {
+      throw new ForbiddenException('Invalid token claims');
     }
 
     // Check if the token exists in the database
     const authToken = await this.prisma.authToken.findFirst({
-      where: { refreshToken: hash512(`${token}`) },
+      where: { userId: +jwt.sub, refreshToken: hash512(`${token}`) },
     });
     if (!authToken) {
       throw new ForbiddenException('Token not found');
@@ -106,7 +114,7 @@ export class AuthJWTService {
   ): Promise<string> {
     this.logger.log(request, this.generateToken.name);
     const token = await this.jwtService.sign(subject, {
-      privateKey: { key: privateKey, passphrase: uuidv1() },
+      privateKey,
       expiresIn,
       algorithm,
     });

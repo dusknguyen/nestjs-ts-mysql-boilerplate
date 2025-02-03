@@ -25,11 +25,8 @@ export async function hashPassword(password: string): Promise<string | null> {
   try {
     // Hash the password using the defined Argon2 configuration
     const hash = await argon2.hash(password, argon2Config);
-    console.log('Hashed Password:', hash);
     return hash;
-  } catch (err) {
-    console.error('Error hashing password:', err);
-  }
+  } catch (err) {}
   return null;
 }
 
@@ -45,8 +42,6 @@ export async function verifyPassword(hash: string, password: string): Promise<bo
     // Verify if the provided password matches the stored hash with the secret for additional security
     const isMatch = await argon2.verify(hash, password, { secret: Buffer.from('mysecret') });
     return isMatch;
-  } catch (err) {
-    console.error('Error verifying password:', err);
-  }
+  } catch (err) {}
   return false;
 }

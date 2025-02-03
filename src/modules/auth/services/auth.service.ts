@@ -14,7 +14,7 @@ import { hashPassword, verifyPassword } from 'shared/crypto/password';
 const config = configuration();
 
 /**
- * Service for handling authentication logic such as login, registration, and token refresh.
+ * Service responsible for authentication logic, including login, registration, and token management.
  */
 @Injectable()
 export class AuthService {
@@ -30,14 +30,14 @@ export class AuthService {
   }
 
   /**
-   * Refreshes the user's authentication tokens.
-   * @param ctx RequestContext
-   * @param userId User ID to refresh tokens for.
-   * @returns Access and refresh tokens.
+   * Refreshes authentication tokens for a given user.
+   * @param ctx RequestContext containing request-specific metadata.
+   * @param userId ID of the user to refresh tokens for.
+   * @returns Object containing new access and refresh tokens.
    */
-  async refreshCustomer(ctx: RequestContext, userId: any): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshCustomer(ctx: RequestContext, userId: number): Promise<{ accessToken: string; refreshToken: string }> {
     this.logger.log(ctx, `${this.refreshCustomer.name} was called`);
-    const user = await this.prisma.user.findUnique({ where: { id: +userId } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
@@ -47,10 +47,10 @@ export class AuthService {
   }
 
   /**
-   * Registers a new customer.
-   * @param ctx RequestContext
-   * @param credential RegisterInput
-   * @returns Newly created user object
+   * Registers a new customer in the system.
+   * @param ctx RequestContext containing request-specific metadata.
+   * @param credential User registration details.
+   * @returns Newly created user entity.
    */
   async registerCustomer(ctx: RequestContext, credential: RegisterInput): Promise<User> {
     this.logger.log(ctx, `${this.registerCustomer.name} was called`);
@@ -71,11 +71,11 @@ export class AuthService {
   }
 
   /**
-   * Logs in a user (customer or employee).
-   * @param ctx RequestContext
-   * @param credentials LoginInput
-   * @param role User role (either 'CUSTOMER' or 'EMPLOYEE')
-   * @returns Access and refresh tokens.
+   * Handles user login for both customers and employees.
+   * @param ctx RequestContext containing request-specific metadata.
+   * @param credentials Login credentials including username and password.
+   * @param role User role (either CUSTOMER or EMPLOYEE).
+   * @returns Object containing access and refresh tokens.
    */
   private async login(ctx: RequestContext, credentials: LoginInput, role: ROLE): Promise<{ accessToken: string; refreshToken: string }> {
     this.logger.log(ctx, `${this.login.name} was called`);
@@ -90,30 +90,30 @@ export class AuthService {
   }
 
   /**
-   * Login for customer.
-   * @param ctx RequestContext
-   * @param credentials LoginInput
-   * @returns Access and refresh tokens.
+   * Handles customer login.
+   * @param ctx RequestContext containing request-specific metadata.
+   * @param credentials Customer login credentials.
+   * @returns Object containing access and refresh tokens.
    */
   async loginCustomer(ctx: RequestContext, credentials: LoginInput): Promise<{ accessToken: string; refreshToken: string }> {
     return this.login(ctx, credentials, ROLE.CUSTOMER);
   }
 
   /**
-   * Login for employee.
-   * @param ctx RequestContext
-   * @param credentials LoginInput
-   * @returns Access and refresh tokens.
+   * Handles employee login.
+   * @param ctx RequestContext containing request-specific metadata.
+   * @param credentials Employee login credentials.
+   * @returns Object containing access and refresh tokens.
    */
   async loginEmployee(ctx: RequestContext, credentials: LoginInput): Promise<{ accessToken: string; refreshToken: string }> {
     return this.login(ctx, credentials, ROLE.EMPLOYEE);
   }
 
   /**
-   * Generates authentication tokens for a user.
-   * @param ctx RequestContext
-   * @param user User object
-   * @returns Auth tokens (access and refresh)
+   * Generates authentication tokens (access and refresh) for a given user.
+   * @param ctx RequestContext containing request-specific metadata.
+   * @param user User entity for whom tokens are generated.
+   * @returns Object containing generated access and refresh tokens.
    */
   private async generateAuthTokens(ctx: RequestContext, user: User): Promise<{ accessToken: string; refreshToken: string }> {
     this.logger.log(ctx, `${this.generateAuthTokens.name} was called`);
@@ -124,8 +124,16 @@ export class AuthService {
       throw new HttpException('Invalid user role', HttpStatus.BAD_REQUEST);
     }
 
-    const accessTokenClaims: UserAccessTokenClaims = { username: user.username, uuid: uuidv1() };
-    const refreshTokenClaims: UserRefreshTokenClaims = { username: user.username, uuid: uuidv4() };
+    const accessTokenClaims: UserAccessTokenClaims = {
+      iss: 'auth-service', // Issuer of the token
+      sub: user.id.toString(), // Subject (User ID)
+      jti: uuidv1(), // Unique token identifier
+    };
+    const refreshTokenClaims: UserRefreshTokenClaims = {
+      iss: 'auth-service', // Issuer of the token
+      sub: user.id.toString(), // Subject (User ID)
+      jti: uuidv4(), // Unique token identifier
+    };
 
     const accessToken = await this.authJWTService.generateToken(
       ctx,

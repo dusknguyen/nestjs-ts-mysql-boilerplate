@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
 import configuration from 'config';
 import path from 'path';
-import { hash512 } from 'shared/crypto/hash';
+import { hash256 } from 'shared/crypto/hash';
 import fastifyIO from 'fastify-socket.io';
 
 const config = configuration();
@@ -29,7 +29,7 @@ export async function middleware(fastify: ReturnType<typeof Fastify>): Promise<R
 
   // Configure session management
   await fastify.register(require('@fastify/session'), {
-    secret: hash512('session'), // Secret used to sign the session ID cookie
+    secret: hash256('session'), // Secret used to sign the session ID cookie
     cookie: {
       secure: isProduction, // Secure cookie in production environment
       maxAge: 1 * 60 * 60 * 1000, // 1 hour session expiration

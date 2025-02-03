@@ -77,17 +77,17 @@ async function bootstrap(): Promise<void> {
   }
 
   // Start the application and listen on the configured port
-  await app.listen(config.app.port || 3001); // Default to port 3001 if not set in config
+  await app
+    .listen(config.app.port || 3001)
+    .then(() =>
+      console.log(
+        `Bootstrap on port ${configuration().app.port || 3000}`,
+        new Date().toLocaleString(),
+        `\n OpenAPI Documentation: http://localhost:${configuration().app.port || 3000}/swagger`,
+        `\n Graphql Documentation: http://localhost:${configuration().app.port || 3000}/graphql`,
+      ),
+    )
+    .catch(console.error); // Default to port 3001 if not set in config
 }
 
-// Bootstrap the application and log success message
-bootstrap()
-  .then(() =>
-    console.log(
-      `Bootstrap on port ${configuration().app.port || 3000}`,
-      new Date().toLocaleString(),
-      `\n OpenAPI Documentation: http://localhost:${configuration().app.port || 3000}/swagger`,
-      `\n Graphql Documentation: http://localhost:${configuration().app.port || 3000}/graphql`,
-    ),
-  )
-  .catch(console.error);
+bootstrap();

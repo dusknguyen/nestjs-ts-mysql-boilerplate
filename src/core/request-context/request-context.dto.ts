@@ -14,4 +14,6 @@ export class RequestContext {
 
   /** Optional user identifier extracted from the request */
   user?: string;
+
+  pid!: string;
 }

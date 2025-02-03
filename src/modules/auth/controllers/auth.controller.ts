@@ -134,7 +134,7 @@ export class AuthController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<AuthTokenOutput> {
     this.logger.log(ctx, `${this.refreshToken.name} was called`);
-    const data = await this.authService.refreshCustomer(ctx, request.headers[USER_ID.toLowerCase()]);
+    const data = await this.authService.refreshCustomer(ctx, +(request.headers[USER_ID.toLowerCase()] as string));
 
     reply.setCookie('refreshToken', data.refreshToken, {
       httpOnly: true,
