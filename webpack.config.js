@@ -12,26 +12,26 @@ module.exports = {
 
   // Output configuration
   output: {
-    filename: 'app.js',  // Output filename
-    path: path.resolve(__dirname, 'dist'),  // Output directory
+    filename: 'app.js', // Output filename
+    path: path.resolve(__dirname, 'dist'), // Output directory
   },
 
   // Resolve extensions and configure path aliases
   resolve: {
-    extensions: ['.ts', '.js'],  // Handle both .ts and .js files
-    plugins: [new TsconfigPathsPlugin()],  // Resolve path aliases based on tsconfig
+    extensions: ['.ts', '.js'], // Handle both .ts and .js files
+    plugins: [new TsconfigPathsPlugin()], // Resolve path aliases based on tsconfig
   },
 
   // Module configuration for processing files
   module: {
     rules: [
       {
-        test: /\.(js|ts)$/,  // Apply to .js and .ts files
+        test: /\.(js|ts)$/, // Apply to .js and .ts files
         use: {
-          loader: 'swc-loader',  // Use SWC for fast transpilation
-          options: swcDefaultConfig,  // Apply SWC default settings from NestJS
+          loader: 'swc-loader', // Use SWC for fast transpilation
+          options: swcDefaultConfig, // Apply SWC default settings from NestJS
         },
-        exclude: [/node_modules/, /test/, /dist/, /\.spec\.ts$/, /scripts/],  // Exclude unnecessary directories
+        exclude: [/node_modules/, /test/, /dist/, /\.spec\.ts$/, /scripts/], // Exclude unnecessary directories
       },
     ],
   },
@@ -44,21 +44,21 @@ module.exports = {
 
   // Optimization settings for minimizing the bundle
   optimization: {
-    minimize: isProduction,  // Enable minimization only in production mode
+    minimize: isProduction, // Enable minimization only in production mode
     minimizer: [
       new TerserPlugin({
         terserOptions: {
-          mangle: true,  // Disable name mangling to preserve original names
-          keep_classnames: false,  // Keep class names for debugging
-          keep_fnames: false,  // Keep function names for debugging
+          mangle: false, // Disable name mangling to preserve original names
+          keep_classnames: true, // Keep class names for debugging
+          keep_fnames: true, // Keep function names for debugging
         },
-        extractComments: false,  // Do not extract comments into separate files
+        extractComments: false, // Do not extract comments into separate files
       }),
     ],
   },
 
   // Caching settings to improve build performance
   cache: {
-    type: 'filesystem',  // Use filesystem-based cache for faster incremental builds
+    type: 'filesystem', // Use filesystem-based cache for faster incremental builds
   },
 };

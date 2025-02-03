@@ -2,50 +2,69 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 
 /**
- * Represents the output of an authentication token response.
+ * Represents the authentication token response.
  * Contains the access token required for authenticated API requests.
  */
 export class AuthTokenOutput {
   /**
-   * The access token for the user, used for authenticating requests.
+   * The access token issued to the user.
+   * Required for making authenticated API requests.
    */
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ description: 'JWT access token for authentication' })
   accessToken!: string;
 }
 
 /**
- * Represents the claims for a user associated with an access token.
- * This contains the user's essential information encoded in the token.
+ * Represents the claims included in the access token.
+ * These claims contain user-related details used for authorization.
  */
 export class UserAccessTokenClaims {
   /**
-   * The username of the user encoded in the access token.
+   * Issuer of the token, typically the authentication server.
    */
   @Expose()
-  username!: string;
+  @ApiProperty({ description: 'Token issuer' })
+  iss!: string;
 
   /**
-   * The unique identifier (UUID) of the user encoded in the access token.
+   * The user ID linked to the refresh token.
    */
   @Expose()
-  uuid!: string;
+  @ApiProperty({ description: 'User ID associated with the token' })
+  sub!: string;
+
+  /**
+   * The unique identifier of the refresh token (UUID), used for tracking.
+   */
+  @Expose()
+  @ApiProperty({ description: 'Unique JWT identifier (UUID)' })
+  jti!: string;
 }
 
 /**
- * Represents the claims for a user associated with a refresh token.
- * This contains the user's essential information encoded in the token for token refresh operations.
+ * Represents the claims included in the refresh token.
+ * Used for refreshing expired access tokens.
  */
 export class UserRefreshTokenClaims {
   /**
-   * The username of the user encoded in the refresh token.
+   * Issuer of the token, typically the authentication server.
    */
   @Expose()
-  username!: string;
+  @ApiProperty({ description: 'Token issuer' })
+  iss!: string;
 
   /**
-   * The unique identifier (UUID) of the user encoded in the refresh token.
+   * The user ID linked to the refresh token.
    */
   @Expose()
-  uuid!: string;
+  @ApiProperty({ description: 'User ID associated with the token' })
+  sub!: string;
+
+  /**
+   * The unique identifier of the refresh token (UUID), used for tracking.
+   */
+  @Expose()
+  @ApiProperty({ description: 'Unique JWT identifier (UUID)' })
+  jti!: string;
 }

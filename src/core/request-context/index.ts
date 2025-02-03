@@ -26,5 +26,6 @@ export function createRequestContext(request: FastifyRequest): RequestContext {
   // Capture user ID from headers, if available
   ctx.user = request.headers[USER_ID.toLowerCase()] as string | undefined;
 
+  ctx.pid = `${process.pid}`;
   return ctx;
 }
