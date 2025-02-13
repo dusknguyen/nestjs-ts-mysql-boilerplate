@@ -3,58 +3,91 @@ import fastifyCors from '@fastify/cors';
 import configuration from 'config';
 import path from 'path';
 import { hash256 } from 'shared/crypto/hash';
-import fastifyIO from 'fastify-socket.io';
+import { RedisSessionStore } from 'core/redis/reids.store';
 
 const config = configuration();
 
 /**
- * Setup middleware and essential plugins for the Fastify server.
+ * Maximum performance Fastify middleware optimized for NestJS.
  *
  * @param fastify The Fastify instance.
- * @returns The Fastify instance with middleware and plugins registered.
+ * @returns The Fastify instance with all middleware registered.
  */
 export async function middleware(fastify: ReturnType<typeof Fastify>): Promise<ReturnType<typeof Fastify>> {
   const isProduction = config.app.environment === 'production';
 
-  // Enable Cross-Origin Resource Sharing (CORS)
-  await fastify.register(fastifyCors, {
-    origin: true, // Allow all origins
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'], // Allowed HTTP methods
-    credentials: true, // Allow credentials such as cookies
-  });
+  try {
+    // 🔥 Register all performance plugins in parallel
+    await Promise.all([
+      // ✅ CORS Optimization
+      fastify.register(fastifyCors, {
+        origin: isProduction ? [/\.mydomain\.com$/] : true,
+        methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
+        credentials: true,
+      }),
 
-  // Register essential plugins for compression and cookie handling
-  await fastify.register(require('@fastify/compress'));
-  await fastify.register(require('@fastify/cookie'));
+      // ✅ Brotli Compression (Faster & Better than Gzip)
+      fastify.register(require('@fastify/compress'), {
+        global: true,
+        brotli: { enabled: true },
+        threshold: 512,
+        fast: true,
+      }),
 
-  // Configure session management
-  await fastify.register(require('@fastify/session'), {
-    secret: hash256('session'), // Secret used to sign the session ID cookie
-    cookie: {
-      secure: isProduction, // Secure cookie in production environment
-      maxAge: 1 * 60 * 60 * 1000, // 1 hour session expiration
-    },
-    saveUninitialized: false, // Do not save uninitialized sessions
-    resave: false, // Do not force saving the session to the store on every request
-  });
+      // ✅ Cookie & Session Management
+      fastify.register(require('@fastify/cookie')),
+      fastify.register(require('@fastify/session'), {
+        secret: hash256('session'),
+        cookie: {
+          secure: isProduction,
+          maxAge: 3600000,
+          httpOnly: true,
+          sameSite: 'lax',
+        },
+        saveUninitialized: false,
+        rolling: true,
+        store: RedisSessionStore,
+      }),
 
-  // Register Helmet for securing HTTP headers
-  await fastify.register(require('@fastify/helmet'), {
-    contentSecurityPolicy: isProduction ? undefined : false, // Disable CSP in non-production for easier dev setup
-  });
+      // ✅ Security Headers Optimization
+      fastify.register(require('@fastify/helmet'), {
+        global: true,
+        contentSecurityPolicy: isProduction ? undefined : false,
+        frameguard: { action: 'deny' },
+        dnsPrefetchControl: { allow: false },
+        referrerPolicy: { policy: 'no-referrer' },
+        xssFilter: true,
+      }),
 
-  // Initialize Passport for authentication
-  await fastify.register(require('@fastify/passport').initialize());
-  await fastify.register(require('@fastify/passport').secureSession());
+      // ✅ Static File Optimization with Long Cache
+      fastify.register(require('@fastify/static'), {
+        root: path.join(__dirname, '..', 'public'),
+        cacheControl: true,
+        maxAge: isProduction ? '1y' : '0',
+        immutable: isProduction,
+      }),
 
-  // Serve static files from the 'public' folder
-  await fastify.register(require('@fastify/static'), {
-    root: path.join(__dirname, '..', 'public'),
-    head: false, // Disable 'head' property for static files
-  });
+      // ✅ Rate Limiting (Prevent DoS Attacks)
+      fastify.register(require('@fastify/rate-limit'), {
+        max: 1000, // Allow 1000 requests per minute
+        timeWindow: '1 minute',
+      }),
 
-  // Register Socket.IO for WebSocket functionality
-  await fastify.register(fastifyIO);
+      // ✅ Multipart Handling (Efficient File Uploads)
+      fastify.register(require('@fastify/multipart'), {
+        limits: {
+          fileSize: 50 * 1024 * 1024, // 50MB max file size
+        },
+      }),
+    ]);
+
+    // 🏆 Secure Authentication Middleware
+    await fastify.register(require('@fastify/passport').initialize());
+    await fastify.register(require('@fastify/passport').secureSession());
+  } catch (error) {
+    console.error('❌ Error registering plugins:', error);
+    throw error;
+  }
 
   return fastify;
 }

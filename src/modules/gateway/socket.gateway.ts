@@ -11,11 +11,11 @@ import { Server, Socket } from 'socket.io';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { JoinRoomDto } from 'modules/gateway/dtos/join-room.dto';
-import redisClient from 'core/redis/redis.server';
 import { SocketService } from './socket.service';
 import { AuthJWTService } from 'modules/auth/services/auth-jwt.service';
 import configuration from 'config';
 import { loggerInstance } from 'core/services/logger.service';
+import { redisClients } from 'core/redis/redis.client';
 
 const config = configuration();
 
@@ -47,8 +47,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect, 
    * This allows socket events to be broadcasted across multiple instances.
    */
   async onModuleInit() {
-    const pubClient = redisClient;
-    const subClient = pubClient.duplicate();
+    const pubClient = redisClients.socket.pub;
+    const subClient = redisClients.socket.sub;
     this.io.adapter(createAdapter(pubClient, subClient));
 
     // Pass the io instance to SocketService for cross-service emitting

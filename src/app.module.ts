@@ -10,9 +10,10 @@ import { GqlModule } from 'modules/gql';
 import configuration from 'config';
 import { AuthModule } from 'modules/auth/auth.module';
 import { CacheModule } from 'shared/cache';
-import KeyvRedis, { Keyv } from '@keyv/redis';
+import { Keyv } from '@keyv/redis';
 import { FastifyRequest } from 'fastify';
 import { GatewayModule } from 'modules/gateway/gateway.module';
+import { redisClients } from 'core/redis/redis.client';
 
 const config = configuration();
 const isProduction = config.app.environment === 'production';
@@ -38,11 +39,7 @@ const isProduction = config.app.environment === 'production';
     // CacheModule configuration with Redis store using Keyv
     CacheModule.registerAsync({
       useFactory: async () => {
-        const keyv = new Keyv(
-          new KeyvRedis(`redis://${config.redis.host}:${config.redis.port}`, {
-            namespace: 'app-module-cache', // Namespace for cache entries
-          }),
-        );
+        const keyv = new Keyv(redisClients.cache);
         return {
           keyv,
           ttl: 60 * 60000, // Cache TTL in milliseconds (1 hour)
