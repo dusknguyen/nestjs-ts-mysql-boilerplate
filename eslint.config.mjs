@@ -1,6 +1,5 @@
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import jest from 'eslint-plugin-jest';
-import prettier from 'eslint-plugin-prettier';
 import security from 'eslint-plugin-security';
 import typescriptParser from '@typescript-eslint/parser';
 import importPlugin from 'eslint-plugin-import';
@@ -92,7 +91,6 @@ const sharedPlugins = {
   security,
   jest,
   importPlugin,
-  prettier,
   jsdoc, // Add JSDoc plugin
 };
 const settings = {
