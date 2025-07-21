@@ -1,6 +1,5 @@
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import jest from 'eslint-plugin-jest';
-import prettier from 'eslint-plugin-prettier';
 import security from 'eslint-plugin-security';
 import typescriptParser from '@typescript-eslint/parser';
 import importPlugin from 'eslint-plugin-import';
@@ -85,14 +84,12 @@ const commonRules = {
   'lines-between-class-members': ['error', 'always', { exceptAfterSingleLine: true }],
   'import/no-default-export': 'off',
   'import/prefer-default-export': 'off',
-  'prettier/prettier': ['error'],
 };
 const sharedPlugins = {
   typescriptEslint,
   security,
   jest,
   importPlugin,
-  prettier,
   jsdoc, // Add JSDoc plugin
 };
 const settings = {
@@ -101,7 +98,6 @@ const settings = {
     'plugin:@typescript-eslint/recommended',
     'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'plugin:security/recommended-legacy',
-    'prettier',
   ],
 };
 export default [
